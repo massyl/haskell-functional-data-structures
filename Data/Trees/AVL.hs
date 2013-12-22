@@ -1,7 +1,8 @@
 module Data.Trees.AVL where
 import qualified Data.List as L
+import Data.Function
 
-{-- Note that to be more effecient we have store the high of each subtree in the node to avoid recalculating it--}
+{-- Note that to be more effecient we have to store the high of each subtree in the node to avoid recalculating it--}
 data Tree a = Empty | Node a !(Tree a) !(Tree a) deriving (Eq,Show)
 
 leaf x = Node x Empty Empty
@@ -19,7 +20,7 @@ size (Node _ l r) = 1 + size l + size r
 
 height Empty = -1
 height (Node _ Empty Empty) = 0
-height (Node a l r) = 1 + max (height l) (height r)
+height (Node a l r) = 1 + (max `on` height) l r
 
 -- Return a unsorted list, but we can go back to the origin Tree from this list
 toList :: Tree a -> [a]
@@ -43,7 +44,7 @@ greatValue (Node _ _ r) = greatValue r
 
 mirror :: Tree a -> Tree a
 mirror Empty = Empty
-mirror (Node a l r) = Node a (mirror r) (mirror l)
+mirror (Node a l r) = (Node a `on` mirror) r l
 
 empty :: Tree a -> Bool
 empty Empty = True
@@ -95,7 +96,7 @@ remove (Node a l r) x = rebalance (Node v vs r) where (v,vs) = deleteMax l
 {--
  Deletes the maximum element in a given Tree.
  Note that this implementation works only on non Empty Trees.
- Note that we can handle easly this success or failure of this function by returning Maybe (a, Tree a) or Either(String, (a, Tree a))
+ Note that we can handle easly the success or failure of this function by returning Maybe (a, Tree a) or Either(String, (a, Tree a))
 --}
 deleteMax :: Tree a -> (a, Tree a)
 deleteMax (Node a l Empty) = (a, l)
@@ -114,8 +115,8 @@ isBSearchTree (Node a l1@(Node b _ _) l2@(Node c _ _)) = and [(a > b), (a < c), 
 {--
  Right rotate the given Tree. suppose we have tree N, NL(NLL,NLR),NR(NRL,NRR),
  - Empty = do nothing
- - N NL R = NL become the root with NLL as it's left son and the tree rooted with N(NLL,NR) as it's right son
-   (note that the right son of NL becomes the left son of N after the rotation and N because the right son of NL
+ - N NL NR = NL become the root with NLL as it's left son and the tree rooted with N(NLL,NR) as it's right son
+   (note that the right son of NL becomes the left son of N after the rotation on and N becomes the right son of NL
 --}
 rotateR :: Tree a -> Tree a
 rotateR Empty = Empty
@@ -124,8 +125,8 @@ rotateR (Node a (Node b l' r') r) = Node b l' (Node a r' r)
 {--
  Left rotate the given Tree. suppose we have tree N, NL(NLL,NLR),NR(NRL,NRR),
  - Empty = do nothing
- - N NL R = NR become the root with N (NL,NRL) as it's left son and NRR as it's right son
-   (note that the left son of NR becomes the right son of N after the rotation and N because the left son of NR
+ - N NL NR = NR become the root with N (NL,NRL) as it's left son and NRR as it's right son
+   (note that the left son of NR becomes the right son of N after the rotation and N becomes the left son of NR
 --}
 rotateL :: Tree a -> Tree a
 rotateL Empty = Empty
@@ -147,7 +148,7 @@ rotateL (Node a l (Node b l' r')) = Node b (Node a l l') r'
      1-2)otherwise do a left rotation on NL and then a right rotation on N
 
    2)- if (hight NL) - (hight NR) == -2
-     2-1) if( hight RRL) - (hight RRL) >= 0 do a left rotation on N
+     2-1) if( hight NRR) - (hight RRL) >= 0 do a left rotation on N
      2-1) otherwise do a right rotation on NR and then a left rotation on N
 --}
 rebalance Empty = Empty
@@ -167,7 +168,7 @@ balanced d = abs d <= 1
 factor l r = (height l) - (height r)
 
 {--
- Tells whether the given tree is and AVL or not. Suppose a tree N with NL it's left son and NR it's right son
+ Tells whether the given tree is an AVL or not. Suppose a tree N with NL it's left son and NR it's right son
  - N is a AVL if : |(hight NL) - (hight NR)| <= 1 and that NL and NR are AVL too
 --}
 isAVL Empty = True
